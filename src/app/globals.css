@@ -1,26 +1,74 @@
-@import "tailwindcss";
+﻿@import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #F8F4EF;
+  --foreground: #2A2A2A;
+  --accent: #D9B38C;
+  --warm-beige: #DCC7B6;
+  --sage: #CBD7C2;
+  --card: #FCFAF7;
+  --priority-high: #C97B63;
+  --priority-medium: #D9B38C;
+  --priority-low: #8CAA73;
+  --lavender: #C7BBE8;
+  --rose: #E3B5AC;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+  --color-accent: var(--accent);
+  --color-warm-beige: var(--warm-beige);
+  --color-sage: var(--sage);
+  --color-card: var(--card);
+  --color-priority-high: var(--priority-high);
+  --color-priority-medium: var(--priority-medium);
+  --color-priority-low: var(--priority-low);
+  --color-lavender: var(--lavender);
+  --color-rose: var(--rose);
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+
+  --text-h1: 2.125rem;
+  --text-h1--line-height: 1.2;
+  --text-h1--font-weight: 700;
+
+  --text-h2: 1.5rem;
+  --text-h2--line-height: 1.3;
+  --text-h2--font-weight: 600;
+
+  --text-body: 1.125rem;
+  --text-body--line-height: 1.5;
+  --text-body--font-weight: 500;
+
+  --text-caption: 0.875rem;
+  --text-caption--line-height: 1.4;
+  --text-caption--font-weight: 400;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans);
+}
+
+.bg-gradient-work {
+  background-image: linear-gradient(135deg, #EBD9C6, #F6ECE2);
+}
+
+.bg-gradient-personal {
+  background-image: linear-gradient(135deg, #DDE6D6, #F1F6EF);
+}
+
+.bg-gradient-accent {
+  background-image: linear-gradient(135deg, #E6C29A, #F3DFCA);
+}
+
+dialog {
+  border: none;
+  padding: 0;
+}
+
+dialog::backdrop {
+  background: rgba(42, 42, 42, 0.3);
 }
