@@ -1,5 +1,7 @@
 ﻿import { BottomNav } from "@/components/ui/bottom-nav";
 
+export const dynamic = "force-dynamic";
+
 export default function AppLayout({
   children,
 }: {
