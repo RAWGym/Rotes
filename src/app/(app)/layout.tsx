@@ -9,7 +9,7 @@ export default function AppLayout({
 }) {
   return (
     <div className="flex min-h-full flex-1 flex-col">
-      <main className="flex-1 overflow-y-auto pb-20">{children}</main>
+      <main className="flex-1 overflow-y-auto pb-28">{children}</main>
       <BottomNav />
     </div>
   );
