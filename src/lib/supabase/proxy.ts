@@ -27,9 +27,9 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser()
 
-  const isAuthRoute =
-    request.nextUrl.pathname.startsWith('/login') ||
-    request.nextUrl.pathname.startsWith('/register')
+  const pathname = request.nextUrl.pathname
+  const isAuthRoute = pathname.startsWith('/login') || pathname.startsWith('/register')
+  const isOnboardingRoute = pathname.startsWith('/onboarding')
 
   if (!user && !isAuthRoute) {
     const url = request.nextUrl.clone()
@@ -41,6 +41,26 @@ export async function updateSession(request: NextRequest) {
     const url = request.nextUrl.clone()
     url.pathname = '/'
     return NextResponse.redirect(url)
+  }
+
+  if (user && !isAuthRoute) {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('onboarding_completed')
+      .eq('id', user.id)
+      .single()
+
+    if (profile && !profile.onboarding_completed && !isOnboardingRoute) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/onboarding'
+      return NextResponse.redirect(url)
+    }
+
+    if (profile?.onboarding_completed && isOnboardingRoute) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/'
+      return NextResponse.redirect(url)
+    }
   }
 
   return supabaseResponse

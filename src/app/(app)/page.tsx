@@ -18,6 +18,7 @@ import { QuickActionButton } from "@/components/ui/quick-action-button";
 import { TaskDetailSheet } from "@/components/ui/task-detail-sheet";
 import { useTasks, useToggleTaskStatus, type Task } from "@/hooks/use-tasks";
 import { useProjects } from "@/hooks/use-projects";
+import { useProfile } from "@/hooks/use-profile";
 
 const filters = [
   { value: "all", label: "Все" },
@@ -43,6 +44,7 @@ function groupByCategory(tasks: Task[]) {
 export default function DashboardPage() {
   const { data: tasks, isLoading } = useTasks();
   const { data: projects } = useProjects();
+  const { data: profile } = useProfile();
   const toggleTask = useToggleTaskStatus();
   const [activeFilter, setActiveFilter] = useState("all");
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
@@ -69,7 +71,7 @@ export default function DashboardPage() {
       <div className="flex items-start justify-between">
         <div>
           <p className="text-caption text-foreground/60">Добрый вечер,</p>
-          <h1 className="text-h1">Максим</h1>
+          <h1 className="text-h1">{profile?.name ?? "..."}</h1>
         </div>
         <button
           type="button"

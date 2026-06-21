@@ -1,9 +1,10 @@
-﻿import { LogOut, Settings, Bell, Palette, Info } from "lucide-react";
+﻿import { LogOut, User, Settings, Bell, Palette, Info } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { signOut } from "@/lib/supabase/actions";
 
 const menuItems = [
+  { icon: User, label: "Личная информация", href: "/profile/personal-info" },
   { icon: Settings, label: "Настройки", href: "/profile/settings" },
   { icon: Bell, label: "Уведомления", href: "/profile/notifications" },
   { icon: Palette, label: "Тема оформления", href: "/profile/theme" },
