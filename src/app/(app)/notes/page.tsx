@@ -1,15 +1,12 @@
 ﻿"use client";
 
-import { useState } from "react";
-import { ArrowLeft, Plus } from "lucide-react";
 import Link from "next/link";
+import { ArrowLeft, Plus } from "lucide-react";
 import { NoteCard } from "@/components/ui/note-card";
-import { NoteFormModal } from "@/components/ui/note-form-modal";
 import { useNotes } from "@/hooks/use-notes";
 
 export default function NotesPage() {
   const { data: notes, isLoading } = useNotes();
-  const [isModalOpen, setIsModalOpen] = useState(false);
 
   return (
     <div className="p-6">
@@ -34,16 +31,13 @@ export default function NotesPage() {
         ))}
       </div>
 
-      <button
-        type="button"
+      <Link
+        href="/notes/new"
         aria-label="Новая заметка"
-        onClick={() => setIsModalOpen(true)}
         className="fixed bottom-24 right-6 z-20 flex h-14 w-14 items-center justify-center rounded-full bg-accent text-card shadow-lg shadow-accent/30"
       >
         <Plus size={24} />
-      </button>
-
-      <NoteFormModal open={isModalOpen} onClose={() => setIsModalOpen(false)} />
+      </Link>
     </div>
   );
 }

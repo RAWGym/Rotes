@@ -1,9 +1,9 @@
 ﻿"use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { Plus } from "lucide-react";
 import { GoalCard } from "@/components/ui/goal-card";
-import { GoalFormModal } from "@/components/ui/goal-form-modal";
 import { useGoals } from "@/hooks/use-goals";
 
 const filters = [
@@ -18,7 +18,6 @@ const filters = [
 export default function GoalsPage() {
   const { data: goals, isLoading } = useGoals();
   const [activeFilter, setActiveFilter] = useState("all");
-  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const filteredGoals =
     activeFilter === "all" ? goals : goals?.filter((g) => g.category === activeFilter);
@@ -27,14 +26,13 @@ export default function GoalsPage() {
     <div className="p-6">
       <div className="flex items-center justify-between">
         <h1 className="text-h1">Мои цели</h1>
-        <button
-          type="button"
+        <Link
+          href="/goals/new"
           aria-label="Новая цель"
-          onClick={() => setIsModalOpen(true)}
           className="flex h-10 w-10 items-center justify-center rounded-full bg-card shadow-sm shadow-foreground/5"
         >
           <Plus size={20} className="text-foreground/70" />
-        </button>
+        </Link>
       </div>
 
       <div className="mt-4 flex gap-2 overflow-x-auto pb-1">
@@ -70,8 +68,6 @@ export default function GoalsPage() {
           />
         ))}
       </div>
-
-      <GoalFormModal open={isModalOpen} onClose={() => setIsModalOpen(false)} />
     </div>
   );
 }

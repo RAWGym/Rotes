@@ -1,9 +1,9 @@
 ﻿"use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { SlidersHorizontal, MoreHorizontal, X, Check, CalendarDays, Plus, ChevronLeft, ChevronRight } from "lucide-react";
 import { EventRow } from "@/components/ui/event-row";
-import { EventFormModal } from "@/components/ui/event-form-modal";
 import { DayIslandCard } from "@/components/ui/day-island-card";
 import { TaskDetailSheet } from "@/components/ui/task-detail-sheet";
 import { useEvents, type Event } from "@/hooks/use-events";
@@ -80,11 +80,14 @@ function tasksForDay(tasks: Task[], date: Date) {
   return tasks.filter((t) => t.deadline && new Date(t.deadline).toDateString() === date.toDateString());
 }
 
+function toDateParam(date: Date) {
+  return date.toISOString().slice(0, 10);
+}
+
 export default function CalendarPage() {
   const [view, setView] = useState<View>("day");
   const [selectedDate, setSelectedDate] = useState(() => new Date());
   const [bannerVisible, setBannerVisible] = useState(true);
-  const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
 
   const weekDates = getWeekDates(selectedDate);
@@ -278,16 +281,14 @@ export default function CalendarPage() {
         </div>
       )}
 
-      <button
-        type="button"
+      <Link
+        href={`/calendar/new?date=${toDateParam(selectedDate)}`}
         aria-label="Новое событие"
-        onClick={() => setIsModalOpen(true)}
         className="fixed bottom-24 right-6 z-20 flex h-14 w-14 items-center justify-center rounded-full bg-accent text-card shadow-lg shadow-accent/30"
       >
         <Plus size={24} />
-      </button>
+      </Link>
 
-      <EventFormModal open={isModalOpen} onClose={() => setIsModalOpen(false)} date={selectedDate} />
       <TaskDetailSheet task={selectedTask} projects={projects ?? []} onClose={() => setSelectedTaskId(null)} />
     </div>
   );

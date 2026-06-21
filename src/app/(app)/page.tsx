@@ -14,8 +14,6 @@ import {
 } from "lucide-react";
 import { ProgressRing } from "@/components/ui/progress-ring";
 import { TaskCard } from "@/components/ui/task-card";
-import { TaskFormModal } from "@/components/ui/task-form-modal";
-import { GoalFormModal } from "@/components/ui/goal-form-modal";
 import { QuickActionButton } from "@/components/ui/quick-action-button";
 import { TaskDetailSheet } from "@/components/ui/task-detail-sheet";
 import { useTasks, useToggleTaskStatus, type Task } from "@/hooks/use-tasks";
@@ -46,8 +44,6 @@ export default function DashboardPage() {
   const { data: tasks, isLoading } = useTasks();
   const { data: projects } = useProjects();
   const toggleTask = useToggleTaskStatus();
-  const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
-  const [isGoalModalOpen, setIsGoalModalOpen] = useState(false);
   const [activeFilter, setActiveFilter] = useState("all");
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
 
@@ -96,20 +92,22 @@ export default function DashboardPage() {
       </div>
 
       <div className="mt-4 flex gap-2">
-        <QuickActionButton
-          icon={Plus}
-          label="Новая задача"
-          bgColorClass="bg-accent/15"
-          iconColorClass="text-accent"
-          onClick={() => setIsTaskModalOpen(true)}
-        />
-        <QuickActionButton
-          icon={Target}
-          label="Новая цель"
-          bgColorClass="bg-sage/25"
-          iconColorClass="text-sage"
-          onClick={() => setIsGoalModalOpen(true)}
-        />
+        <Link href="/tasks/new" className="flex-1">
+          <QuickActionButton
+            icon={Plus}
+            label="Новая задача"
+            bgColorClass="bg-accent/15"
+            iconColorClass="text-accent"
+          />
+        </Link>
+        <Link href="/goals/new" className="flex-1">
+          <QuickActionButton
+            icon={Target}
+            label="Новая цель"
+            bgColorClass="bg-sage/25"
+            iconColorClass="text-sage"
+          />
+        </Link>
         <Link href="/notes" className="flex-1">
           <QuickActionButton
             icon={FileText}
@@ -187,17 +185,14 @@ export default function DashboardPage() {
         })}
       </div>
 
-      <button
-        type="button"
+      <Link
+        href="/tasks/new"
         aria-label="Новая задача"
-        onClick={() => setIsTaskModalOpen(true)}
         className="fixed bottom-24 right-6 z-20 flex h-14 w-14 items-center justify-center rounded-full bg-accent text-card shadow-lg shadow-accent/30"
       >
         <Plus size={24} />
-      </button>
+      </Link>
 
-      <TaskFormModal open={isTaskModalOpen} onClose={() => setIsTaskModalOpen(false)} />
-      <GoalFormModal open={isGoalModalOpen} onClose={() => setIsGoalModalOpen(false)} />
       <TaskDetailSheet task={selectedTask} projects={projects ?? []} onClose={() => setSelectedTaskId(null)} />
     </div>
   );
