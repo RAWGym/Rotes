@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -17,10 +17,19 @@ export function BottomNav() {
 
   return (
     <nav
-      className="fixed inset-x-4 z-30 mx-auto max-w-xs"
-      style={{ bottom: "max(1rem, calc(env(safe-area-inset-bottom) + 0.5rem))" }}
+      className="fixed inset-x-4 z-30 mx-auto max-w-sm"
+      style={{ bottom: "max(1.25rem, calc(env(safe-area-inset-bottom) + 0.75rem))" }}
     >
-      <div className="flex items-center justify-around rounded-full border border-foreground/5 bg-card/80 px-3 py-2.5 shadow-lg shadow-foreground/15 backdrop-blur-md">
+      <div
+        className="flex items-center justify-around rounded-full border px-2 py-2"
+        style={{
+          background: "rgba(255,255,255,0.72)",
+          backdropFilter: "blur(40px)",
+          WebkitBackdropFilter: "blur(40px)",
+          borderColor: "rgba(255,255,255,0.8)",
+          boxShadow: "0 12px 40px rgba(0,0,0,0.05), 0 1px 0 rgba(255,255,255,0.6) inset",
+        }}
+      >
         {navItems.map(({ href, label, icon: Icon }) => {
           const isActive = pathname === href;
           return (
@@ -28,13 +37,28 @@ export function BottomNav() {
               key={href}
               href={href}
               aria-label={label}
-              className={
-                isActive
-                  ? "flex h-10 w-10 items-center justify-center rounded-full bg-accent text-card"
-                  : "flex h-10 w-10 items-center justify-center rounded-full text-foreground/50"
-              }
+              className="flex flex-col items-center gap-0.5 py-1"
             >
-              <Icon size={20} strokeWidth={2} />
+              <span
+                className={
+                  isActive
+                    ? "flex h-11 w-11 items-center justify-center rounded-full"
+                    : "flex h-11 w-11 items-center justify-center rounded-full"
+                }
+                style={isActive ? { background: "var(--accent)" } : {}}
+              >
+                <Icon
+                  size={20}
+                  strokeWidth={2}
+                  color={isActive ? "#FCFAF7" : "rgba(42,42,42,0.45)"}
+                />
+              </span>
+              <span
+                className="text-[10px] font-medium leading-none"
+                style={{ color: isActive ? "var(--accent)" : "rgba(42,42,42,0.45)" }}
+              >
+                {label}
+              </span>
             </Link>
           );
         })}

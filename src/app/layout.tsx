@@ -1,21 +1,21 @@
-﻿import type { Metadata, Viewport } from "next";
+import type { Metadata, Viewport } from "next";
+import { Cormorant_Garamond } from "next/font/google";
 import "./globals.css";
 import { RegisterServiceWorker } from "@/components/register-service-worker";
 import { QueryProvider } from "@/components/providers/query-provider";
 
+const cormorant = Cormorant_Garamond({
+  variable: "--font-cormorant",
+  subsets: ["latin", "cyrillic"],
+  weight: ["400", "500", "600"],
+});
+
 export const metadata: Metadata = {
   title: "Rotes",
-  description: "Премиальный цифровой планер: задачи, цели, события и заметки в одном месте",
+  description: "Digital Life Planner",
   manifest: "/manifest.json",
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: "default",
-    title: "Rotes",
-  },
-  icons: {
-    icon: "/icons/icon-192.png",
-    apple: "/icons/icon-192.png",
-  },
+  appleWebApp: { capable: true, statusBarStyle: "default", title: "Rotes" },
+  icons: { icon: "/icons/icon-192.png", apple: "/icons/icon-192.png" },
 };
 
 export const viewport: Viewport = {
@@ -23,13 +23,9 @@ export const viewport: Viewport = {
   viewportFit: "cover",
 };
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="ru" className="h-full antialiased">
+    <html lang="ru" className={`h-full antialiased ${cormorant.variable}`}>
       <body className="min-h-full flex flex-col">
         <QueryProvider>
           <RegisterServiceWorker />
