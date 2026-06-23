@@ -12,8 +12,11 @@ const navItems = [
   { href: "/profile", label: "Профиль", icon: User },
 ];
 
+const HIDDEN_ON = ["/assistant"];
+
 export function BottomNav() {
   const pathname = usePathname();
+  if (HIDDEN_ON.some((p) => pathname.startsWith(p))) return null;
 
   return (
     <nav
@@ -33,25 +36,12 @@ export function BottomNav() {
         {navItems.map(({ href, label, icon: Icon }) => {
           const isActive = pathname === href;
           return (
-            <Link
-              key={href}
-              href={href}
-              aria-label={label}
-              className="flex flex-col items-center gap-0.5 py-1"
-            >
+            <Link key={href} href={href} aria-label={label} className="flex flex-col items-center gap-0.5 py-1">
               <span
-                className={
-                  isActive
-                    ? "flex h-11 w-11 items-center justify-center rounded-full"
-                    : "flex h-11 w-11 items-center justify-center rounded-full"
-                }
+                className="flex h-11 w-11 items-center justify-center rounded-full"
                 style={isActive ? { background: "var(--accent)" } : {}}
               >
-                <Icon
-                  size={20}
-                  strokeWidth={2}
-                  color={isActive ? "#FCFAF7" : "rgba(42,42,42,0.45)"}
-                />
+                <Icon size={20} strokeWidth={2} color={isActive ? "#FCFAF7" : "rgba(42,42,42,0.45)"} />
               </span>
               <span
                 className="text-[10px] font-medium leading-none"

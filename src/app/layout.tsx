@@ -21,12 +21,16 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   themeColor: "#F8F4EF",
   viewportFit: "cover",
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="ru" className={`h-full antialiased ${cormorant.variable}`}>
-      <body className="min-h-full flex flex-col">
+      <body className="min-h-full flex flex-col" style={{ touchAction: "manipulation" }}>
         <QueryProvider>
           <RegisterServiceWorker />
           {children}

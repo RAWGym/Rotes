@@ -3,8 +3,8 @@
 import { useState } from "react";
 import Link from "next/link";
 import {
-  Search, Bell, SlidersHorizontal, ChevronDown, ChevronUp,
-  ChevronRight, AlertCircle, Clock, Zap, Plus, Target, Bot, Flame,
+  Search, Bell, ChevronDown, ChevronUp,
+  ChevronRight, AlertCircle, Clock, Zap, Plus, Target, Bot, Brain,
 } from "lucide-react";
 import { TaskDetailSheet } from "@/components/ui/task-detail-sheet";
 import { useTasks, useToggleTaskStatus, type Task } from "@/hooks/use-tasks";
@@ -20,12 +20,12 @@ function getGreeting() {
 }
 
 const CATEGORY_META: Record<string, { emoji: string; label: string; bg: string }> = {
-  work:      { emoji: "💼", label: "Работа",    bg: "#FEF3E8" },
-  personal:  { emoji: "❤️", label: "Личное",    bg: "#FEE8EC" },
-  health:    { emoji: "🌿", label: "Здоровье",  bg: "#E8F5E9" },
-  education: { emoji: "📚", label: "Обучение",  bg: "#EDE8FF" },
-  finance:   { emoji: "💰", label: "Финансы",   bg: "#FEF3E8" },
-  business:  { emoji: "🏢", label: "Бизнес",    bg: "#FFF0E8" },
+  work:      { emoji: "💼", label: "Работа",   bg: "#FEF3E8" },
+  personal:  { emoji: "❤️", label: "Личное",   bg: "#FEE8EC" },
+  health:    { emoji: "🌿", label: "Здоровье", bg: "#E8F5E9" },
+  education: { emoji: "📚", label: "Обучение", bg: "#EDE8FF" },
+  finance:   { emoji: "💰", label: "Финансы",  bg: "#FEF3E8" },
+  business:  { emoji: "🏢", label: "Бизнес",   bg: "#FFF0E8" },
 };
 
 function getCatMeta(cat: string | null) {
@@ -69,17 +69,17 @@ function GlassButton({ icon: Icon, badge }: { icon: React.ElementType; badge?: n
   return (
     <button
       type="button"
-      className="relative flex h-14 w-14 items-center justify-center rounded-full"
+      className="relative flex h-12 w-12 items-center justify-center rounded-full"
       style={{
         background: "rgba(255,255,255,0.75)",
         boxShadow: "0 10px 30px rgba(0,0,0,0.04)",
         backdropFilter: "blur(10px)",
       }}
     >
-      <Icon size={20} color="#2A2A2A" />
+      <Icon size={19} color="#2A2A2A" />
       {badge ? (
         <span
-          className="absolute right-2.5 top-2.5 flex h-4 w-4 items-center justify-center rounded-full text-[9px] font-bold text-white"
+          className="absolute right-2 top-2 flex h-4 w-4 items-center justify-center rounded-full text-[9px] font-bold text-white"
           style={{ background: "var(--accent)" }}
         >
           {badge}
@@ -89,7 +89,10 @@ function GlassButton({ icon: Icon, badge }: { icon: React.ElementType; badge?: n
   );
 }
 
-type TaskRowProps = { task: Task; subtasks: Task[]; onToggle: (id: string) => void; onOpen: (id: string) => void; indent?: boolean };
+type TaskRowProps = {
+  task: Task; subtasks: Task[];
+  onToggle: (id: string) => void; onOpen: (id: string) => void; indent?: boolean;
+};
 
 function TaskRow({ task, subtasks, onToggle, onOpen, indent = false }: TaskRowProps) {
   const hint = deadlineHint(task);
@@ -97,29 +100,19 @@ function TaskRow({ task, subtasks, onToggle, onOpen, indent = false }: TaskRowPr
   return (
     <>
       <div className={`flex items-center gap-3 py-3 ${indent ? "pl-5 border-l-2 border-foreground/10 ml-2" : ""}`}>
-        <button
-          type="button"
-          onClick={() => onOpen(task.id)}
-          className="flex-1 text-left"
-        >
+        <button type="button" onClick={() => onOpen(task.id)} className="flex-1 text-left">
           <p className={done ? "text-body text-foreground/40 line-through" : "text-body text-foreground"}>
             {task.title}
           </p>
           {hint && (
-            <p className="text-caption mt-0.5" style={{ color: hint.color }}>
-              ⏰ {hint.text}
-            </p>
+            <p className="text-caption mt-0.5" style={{ color: hint.color }}>⏰ {hint.text}</p>
           )}
         </button>
         <button
           type="button"
           onClick={() => onToggle(task.id)}
-          className="shrink-0 rounded-full px-3 py-1.5 text-caption font-medium transition-all"
-          style={
-            done
-              ? { background: "#EEF5E8", color: "#8CAA73" }
-              : { background: "#EEF5E8", color: "#5A8A55", border: "none" }
-          }
+          className="shrink-0 rounded-full px-3 py-1.5 text-caption font-medium"
+          style={done ? { background: "#EEF5E8", color: "#8CAA73" } : { background: "#EEF5E8", color: "#5A8A55" }}
         >
           {done ? "Выполнено" : "Выполнить"}
         </button>
@@ -140,9 +133,8 @@ type CategoryCardProps = {
 };
 
 function CategoryCard({
-  label, emoji, bgEmoji, tasks, allTasks,
-  onToggle, onOpen, cardBg, borderColor,
-  defaultOpen = false, isUrgentCard = false,
+  label, emoji, bgEmoji, tasks, allTasks, onToggle, onOpen,
+  cardBg, borderColor, defaultOpen = false, isUrgentCard = false,
 }: CategoryCardProps) {
   const [open, setOpen] = useState(defaultOpen);
   const parents = tasks.filter((t) => !t.parent_task_id);
@@ -157,11 +149,7 @@ function CategoryCard({
         boxShadow: "0 2px 12px rgba(0,0,0,0.04)",
       }}
     >
-      <button
-        type="button"
-        onClick={() => setOpen((p) => !p)}
-        className="flex w-full items-center gap-3 px-5 py-4"
-      >
+      <button type="button" onClick={() => setOpen((p) => !p)} className="flex w-full items-center gap-3 px-5 py-4">
         {emoji && (
           <span
             className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-lg"
@@ -171,10 +159,7 @@ function CategoryCard({
           </span>
         )}
         <div className="flex-1 text-left">
-          <p
-            className="text-body font-semibold"
-            style={{ color: isUrgentCard ? "#C97B63" : "var(--foreground)" }}
-          >
+          <p className="text-body font-semibold" style={{ color: isUrgentCard ? "#C97B63" : "var(--foreground)" }}>
             {label}
           </p>
           {!isUrgentCard && (
@@ -193,21 +178,17 @@ function CategoryCard({
         >
           {tasks.length}
         </span>
-        {open
-          ? <ChevronUp size={16} className="shrink-0 text-foreground/40" />
-          : <ChevronDown size={16} className="shrink-0 text-foreground/40" />
-        }
+        {open ? <ChevronUp size={16} className="shrink-0 text-foreground/40" />
+               : <ChevronDown size={16} className="shrink-0 text-foreground/40" />}
       </button>
 
       {open && (
         <div className="divide-y divide-foreground/5 border-t border-foreground/5 px-5">
           {parents.map((t) => (
             <TaskRow
-              key={t.id}
-              task={t}
+              key={t.id} task={t}
               subtasks={allTasks.filter((s) => s.parent_task_id === t.id)}
-              onToggle={onToggle}
-              onOpen={onOpen}
+              onToggle={onToggle} onOpen={onOpen}
             />
           ))}
         </div>
@@ -234,8 +215,8 @@ export default function DashboardPage() {
     catMap[k] = catMap[k] ? [...catMap[k], t] : [t];
   }
 
-  const overdue   = active.filter(isOverdue);
-  const dueToday  = active.filter((t) => isDueToday(t) && !isOverdue(t));
+  const overdue    = active.filter(isOverdue);
+  const dueToday   = active.filter((t) => isDueToday(t) && !isOverdue(t));
   const dueTomorrow = active.filter(isDueTomorrow);
   const hasAttention = overdue.length > 0 || dueToday.length > 0 || dueTomorrow.length > 0 || active.length >= 7;
   const selectedTask = allTasks.find((t) => t.id === selectedTaskId) ?? null;
@@ -247,8 +228,8 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="px-5 pt-16">
-      <div className="flex items-start justify-between">
+    <div className="px-5 pt-8">
+      <div className="flex items-center justify-between">
         <span
           className="font-serif text-[44px] leading-none"
           style={{ color: "#C99E73", fontFamily: "var(--font-cormorant), Georgia, serif", letterSpacing: "0.01em" }}
@@ -261,24 +242,14 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      <div className="mt-6">
-        <p className="text-[22px] font-medium" style={{ color: "#B58D6A" }}>{getGreeting()}</p>
-        <div className="flex items-end justify-between">
-          <h1 className="text-[64px] font-bold leading-[0.95]" style={{ color: "var(--foreground)" }}>
-            {profile?.name ?? "..."}!
-          </h1>
-          <button
-            type="button"
-            className="mb-2 flex items-center gap-1.5 rounded-full px-3 py-1.5 text-caption font-medium text-foreground/60"
-            style={{ background: "rgba(255,255,255,0.75)", boxShadow: "0 4px 12px rgba(0,0,0,0.04)" }}
-          >
-            <SlidersHorizontal size={13} />
-            Настроить
-          </button>
-        </div>
+      <div className="mt-5">
+        <p className="text-[20px] font-medium" style={{ color: "#B58D6A" }}>{getGreeting()}</p>
+        <h1 className="text-[42px] font-bold leading-tight" style={{ color: "var(--foreground)" }}>
+          {profile?.name ?? "..."}!
+        </h1>
       </div>
 
-      <h2 className="mt-8 text-h2 text-foreground">На сегодня</h2>
+      <h2 className="mt-7 text-h2 text-foreground">На сегодня</h2>
       <div className="mt-3 flex flex-col gap-3">
         {isLoading && <p className="text-caption text-foreground/50">Загрузка...</p>}
         {!isLoading && active.length === 0 && (
@@ -286,31 +257,20 @@ export default function DashboardPage() {
         )}
         {urgent.length > 0 && (
           <CategoryCard
-            label="Срочные"
-            emoji="🔥"
-            bgEmoji="rgba(255,255,255,0.6)"
-            tasks={urgent}
-            allTasks={allTasks}
-            onToggle={handleToggle}
-            onOpen={setSelectedTaskId}
-            cardBg="#FFF2EE"
-            borderColor="#F0D4CC"
-            defaultOpen
-            isUrgentCard
+            label="Срочные" emoji="🔥" bgEmoji="rgba(255,255,255,0.6)"
+            tasks={urgent} allTasks={allTasks}
+            onToggle={handleToggle} onOpen={setSelectedTaskId}
+            cardBg="#FFF2EE" borderColor="#F0D4CC"
+            defaultOpen isUrgentCard
           />
         )}
         {Object.entries(catMap).map(([cat, catTasks]) => {
           const meta = getCatMeta(cat);
           return (
             <CategoryCard
-              key={cat}
-              label={meta.label}
-              emoji={meta.emoji}
-              bgEmoji={meta.bg}
-              tasks={catTasks}
-              allTasks={allTasks}
-              onToggle={handleToggle}
-              onOpen={setSelectedTaskId}
+              key={cat} label={meta.label} emoji={meta.emoji} bgEmoji={meta.bg}
+              tasks={catTasks} allTasks={allTasks}
+              onToggle={handleToggle} onOpen={setSelectedTaskId}
             />
           );
         })}
@@ -318,53 +278,53 @@ export default function DashboardPage() {
 
       {hasAttention && (
         <>
-          <h2 className="mt-8 text-h2 text-foreground">Стоит обратить внимание!</h2>
+          <h2 className="mt-7 text-h2 text-foreground">Стоит обратить внимание!</h2>
           <div className="mt-3 grid grid-cols-3 gap-2">
             {overdue.length > 0 && (
               <button
                 type="button"
                 onClick={() => overdue[0] && setSelectedTaskId(overdue[0].id)}
                 className="flex flex-col gap-2 rounded-2xl p-3 text-left"
-                style={{ background: "#FFF0EE", minHeight: 120 }}
+                style={{ background: "#FFF0EE", minHeight: 110 }}
               >
-                <AlertCircle size={20} color="#C97B63" opacity={0.7} />
+                <AlertCircle size={18} color="#C97B63" opacity={0.7} />
                 <p className="text-caption font-medium leading-tight text-foreground/80">
                   {overdue.length} просроченная задача
                 </p>
-                <ChevronRight size={14} color="rgba(42,42,42,0.4)" className="mt-auto" />
+                <ChevronRight size={13} color="rgba(42,42,42,0.4)" className="mt-auto" />
               </button>
             )}
             {(dueToday.length > 0 || dueTomorrow.length > 0) && (
               <button
                 type="button"
-                onClick={() => (dueToday[0] ?? dueTomorrow[0]) && setSelectedTaskId((dueToday[0] ?? dueTomorrow[0]).id)}
+                onClick={() => {
+                  const t = dueToday[0] ?? dueTomorrow[0];
+                  if (t) setSelectedTaskId(t.id);
+                }}
                 className="flex flex-col gap-2 rounded-2xl p-3 text-left"
-                style={{ background: "#FEF6EE", minHeight: 120 }}
+                style={{ background: "#FEF6EE", minHeight: 110 }}
               >
-                <Clock size={20} color="#D9B38C" opacity={0.8} />
+                <Clock size={18} color="#D9B38C" opacity={0.8} />
                 <p className="text-caption font-medium leading-tight text-foreground/80">
                   {dueToday.length + dueTomorrow.length} с дедлайном сегодня
                 </p>
-                <ChevronRight size={14} color="rgba(42,42,42,0.4)" className="mt-auto" />
+                <ChevronRight size={13} color="rgba(42,42,42,0.4)" className="mt-auto" />
               </button>
             )}
             {active.length >= 7 && (
-              <div
-                className="flex flex-col gap-2 rounded-2xl p-3"
-                style={{ background: "#EEF6EE", minHeight: 120 }}
-              >
-                <Zap size={20} color="#8CAA73" opacity={0.8} />
+              <div className="flex flex-col gap-2 rounded-2xl p-3" style={{ background: "#EEF6EE", minHeight: 110 }}>
+                <Zap size={18} color="#8CAA73" opacity={0.8} />
                 <p className="text-caption font-medium leading-tight text-foreground/80">
                   Снизьте нагрузку — много активных задач
                 </p>
-                <ChevronRight size={14} color="rgba(42,42,42,0.4)" className="mt-auto" />
+                <ChevronRight size={13} color="rgba(42,42,42,0.4)" className="mt-auto" />
               </div>
             )}
           </div>
         </>
       )}
 
-      <h2 className="mt-8 text-h2 text-foreground">Быстрые действия</h2>
+      <h2 className="mt-7 text-h2 text-foreground">Быстрые действия</h2>
       <div className="mt-3 flex flex-col gap-2">
         <Link
           href="/assistant?mode=task"
@@ -374,7 +334,7 @@ export default function DashboardPage() {
           <div>
             <p className="text-h2 font-bold text-foreground">Создать задачу с ИИ</p>
             <p className="mt-1 text-caption text-foreground/60">
-              Опишите задачу в пару слов,{"\n"}а я всё организую
+              Опишите задачу в пару слов, а я всё организую
             </p>
           </div>
           <div
@@ -391,10 +351,7 @@ export default function DashboardPage() {
             className="flex flex-1 items-center gap-2 rounded-2xl p-4"
             style={{ background: "var(--card)", boxShadow: "0 2px 12px rgba(0,0,0,0.04)" }}
           >
-            <div
-              className="flex h-9 w-9 items-center justify-center rounded-full"
-              style={{ background: "#FEF3E8" }}
-            >
+            <div className="flex h-9 w-9 items-center justify-center rounded-full" style={{ background: "#FEF3E8" }}>
               <Plus size={18} color="#D9B38C" />
             </div>
             <span className="text-body text-foreground">Добавить задачу</span>
@@ -404,10 +361,7 @@ export default function DashboardPage() {
             className="flex flex-1 items-center gap-2 rounded-2xl p-4"
             style={{ background: "var(--card)", boxShadow: "0 2px 12px rgba(0,0,0,0.04)" }}
           >
-            <div
-              className="flex h-9 w-9 items-center justify-center rounded-full"
-              style={{ background: "#EEF5E8" }}
-            >
+            <div className="flex h-9 w-9 items-center justify-center rounded-full" style={{ background: "#EEF5E8" }}>
               <Target size={18} color="#8CAA73" />
             </div>
             <span className="text-body text-foreground">Добавить цель</span>
@@ -428,6 +382,23 @@ export default function DashboardPage() {
             style={{ background: "rgba(199,187,232,0.4)" }}
           >
             <Bot size={20} color="#9B8EC4" />
+          </div>
+        </Link>
+
+        <Link
+          href="/assistant?mode=analyze"
+          className="flex items-center justify-between rounded-2xl p-4"
+          style={{ background: "var(--card)", boxShadow: "0 2px 12px rgba(0,0,0,0.04)" }}
+        >
+          <div>
+            <p className="text-body font-medium text-foreground">Анализировать задачи</p>
+            <p className="text-caption text-foreground/50">ИИ расставит приоритеты и найдёт узкие места</p>
+          </div>
+          <div
+            className="flex h-10 w-10 items-center justify-center rounded-full"
+            style={{ background: "#EBF5EB" }}
+          >
+            <Brain size={20} color="#8CAA73" />
           </div>
         </Link>
       </div>
