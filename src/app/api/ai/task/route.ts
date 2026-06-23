@@ -3,6 +3,9 @@ import { createClient } from "@/lib/supabase/server";
 
 const GROK_API_URL = "https://api.x.ai/v1/chat/completions";
 
+const MAX_MESSAGES = 20;
+const MAX_MESSAGE_LENGTH = 2000;
+
 function getSystemPrompt() {
   const now = new Date();
   const dateStr = now.toLocaleDateString("ru-RU", { day: "numeric", month: "long", year: "numeric" });
@@ -36,39 +39,87 @@ function getSystemPrompt() {
 {"question":"Уточни: ...","ready":false}`;
 }
 
+function sanitizeString(value: unknown, maxLen = 500): string {
+  if (typeof value !== "string") return "";
+  return value.slice(0, maxLen).trim();
+}
+
 export async function POST(request: NextRequest) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { messages } = await request.json();
-
-  const response = await fetch(GROK_API_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${process.env.GROK_API_KEY}`,
-    },
-    body: JSON.stringify({
-      model: "grok-3-mini",
-      messages: [
-        { role: "system", content: getSystemPrompt() },
-        ...messages,
-      ],
-      temperature: 0,
-    }),
-  });
-
-  if (!response.ok) {
-    const error = await response.text();
-    console.error("Grok API error:", error);
-    return NextResponse.json({ error }, { status: 500 });
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
-  const data = await response.json();
-  const raw = data.choices?.[0]?.message?.content ?? "";
+  if (!body || typeof body !== "object" || !Array.isArray((body as Record<string, unknown>).messages)) {
+    return NextResponse.json({ error: "messages must be an array" }, { status: 400 });
+  }
 
-  console.log("Grok raw response:", raw);
+  const rawMessages = (body as { messages: unknown[] }).messages;
+
+  if (rawMessages.length > MAX_MESSAGES) {
+    return NextResponse.json({ error: "Too many messages" }, { status: 400 });
+  }
+
+  const messages = rawMessages
+    .filter(
+      (m): m is { role: string; content: string } =>
+        typeof m === "object" &&
+        m !== null &&
+        (m as Record<string, unknown>).role === "user" &&
+        typeof (m as Record<string, unknown>).content === "string"
+    )
+    .map((m) => ({
+      role: "user" as const,
+      content: sanitizeString(m.content, MAX_MESSAGE_LENGTH),
+    }));
+
+  if (messages.length === 0) {
+    return NextResponse.json({ error: "No valid user messages" }, { status: 400 });
+  }
+
+  let grokResponse: Response;
+  try {
+    grokResponse = await fetch(GROK_API_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${process.env.GROK_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: "grok-3-mini",
+        messages: [
+          { role: "system", content: getSystemPrompt() },
+          ...messages,
+        ],
+        temperature: 0,
+        max_tokens: 512,
+      }),
+    });
+  } catch (err) {
+    console.error("Grok fetch error:", err);
+    return NextResponse.json({ error: "AI service unavailable" }, { status: 502 });
+  }
+
+  if (!grokResponse.ok) {
+    console.error("Grok API error status:", grokResponse.status);
+    return NextResponse.json({ error: "AI service error" }, { status: 502 });
+  }
+
+  let data: unknown;
+  try {
+    data = await grokResponse.json();
+  } catch {
+    return NextResponse.json({ error: "AI service returned invalid response" }, { status: 502 });
+  }
+
+  const raw = (data as { choices?: { message?: { content?: string } }[] })
+    ?.choices?.[0]?.message?.content ?? "";
 
   const cleaned = raw
     .replace(/```json\s*/gi, "")
@@ -76,10 +127,25 @@ export async function POST(request: NextRequest) {
     .trim();
 
   try {
-    const parsed = JSON.parse(cleaned);
-    return NextResponse.json(parsed);
+    const parsed = JSON.parse(cleaned) as Record<string, unknown>;
+
+    const safe = {
+      ready: Boolean(parsed.ready),
+      title: sanitizeString(parsed.title, 200),
+      category: sanitizeString(parsed.category, 50),
+      priority: ["high", "medium", "low"].includes(String(parsed.priority))
+        ? String(parsed.priority)
+        : "medium",
+      deadline: typeof parsed.deadline === "string" && /^\d{4}-\d{2}-\d{2}$/.test(parsed.deadline)
+        ? parsed.deadline
+        : null,
+      description: parsed.description ? sanitizeString(parsed.description, 500) : null,
+      question: parsed.question ? sanitizeString(parsed.question as string, 300) : undefined,
+    };
+
+    return NextResponse.json(safe);
   } catch {
-    console.error("JSON parse failed. Raw:", raw, "Cleaned:", cleaned);
-    return NextResponse.json({ error: "parse_failed", raw }, { status: 500 });
+    console.error("JSON parse failed. Cleaned:", cleaned);
+    return NextResponse.json({ question: "Не смог разобрать задачу. Попробуй описать иначе.", ready: false });
   }
 }
