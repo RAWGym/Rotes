@@ -3,23 +3,38 @@ import { createClient } from "@/lib/supabase/server";
 
 const GROK_API_URL = "https://api.x.ai/v1/chat/completions";
 
-const SYSTEM_PROMPT = `Ты помощник в приложении-планировщике Rotes. Твоя задача — извлечь из сообщения пользователя информацию о задаче и вернуть JSON.
+function getSystemPrompt() {
+  const now = new Date();
+  const dateStr = now.toLocaleDateString("ru-RU", { day: "numeric", month: "long", year: "numeric" });
+  const month = now.getMonth() + 1;
+  const year = now.getFullYear();
 
-Текущая дата: ${new Date().toLocaleDateString("ru-RU", { day: "numeric", month: "long", year: "numeric" })}.
+  return `Ты помощник в приложении-планировщике Rotes. Извлеки из сообщения пользователя информацию о задаче.
 
-Правила:
-- Определи title (название задачи, кратко)
-- Определи category: "work" (работа, бизнес, проекты, фриланс), "personal" (личное, семья, здоровье, покупки), или другое слово на русском если очевидно другое
-- Определи deadline: дата в формате YYYY-MM-DD если упомянута, иначе null. Если сказано "до 22-го" — это ближайшее 22-е число (текущего или следующего месяца).
-- Определи priority: "high" если срочно/важно/горит, "low" если не срочно, иначе "medium"
-- Определи description: краткое пояснение если есть детали, иначе null
-- Если чего-то не хватает для создания задачи, задай ОДИН уточняющий вопрос в поле "question"
-- Если всё понятно — верни поле "ready": true
+Сегодня: ${dateStr}. Текущий месяц: ${month}, год: ${year}.
 
-Отвечай ТОЛЬКО валидным JSON без markdown, без пояснений. Формат:
-{"title":"...","category":"...","priority":"...","deadline":"...","description":"...","ready":true}
-или если нужно уточнить:
-{"question":"Уточни, пожалуйста: ...","ready":false}`;
+Правила определения дедлайна:
+- "до 22-го" — ближайшее 22-е число. Если текущее число <= 22, то ${year}-${String(month).padStart(2,"0")}-22. Иначе следующий месяц.
+- "до конца месяца" — последний день текущего месяца
+- Если дата прошла в текущем месяце — берём следующий месяц
+- Формат даты всегда YYYY-MM-DD
+
+Правила определения категории:
+- "work" — работа, бизнес, проект, монтаж, съёмка, клиент, заказ, фриланс
+- "personal" — личное, семья, здоровье, покупки, дом
+- Иначе — напиши категорию одним словом по-русски
+
+Правила приоритета:
+- "high" — срочно, горит, важно, сегодня/завтра
+- "low" — когда-нибудь, не срочно
+- "medium" — всё остальное
+
+Верни ТОЛЬКО валидный JSON, без markdown, без объяснений, без backticks:
+{"title":"...","category":"...","priority":"...","deadline":"YYYY-MM-DD или null","description":"...или null","ready":true}
+
+Если информации совсем не хватает — верни:
+{"question":"Уточни: ...","ready":false}`;
+}
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient();
@@ -37,25 +52,34 @@ export async function POST(request: NextRequest) {
     body: JSON.stringify({
       model: "grok-3-mini",
       messages: [
-        { role: "system", content: SYSTEM_PROMPT },
+        { role: "system", content: getSystemPrompt() },
         ...messages,
       ],
-      temperature: 0.1,
+      temperature: 0,
     }),
   });
 
   if (!response.ok) {
     const error = await response.text();
+    console.error("Grok API error:", error);
     return NextResponse.json({ error }, { status: 500 });
   }
 
   const data = await response.json();
-  const content = data.choices?.[0]?.message?.content ?? "{}";
+  const raw = data.choices?.[0]?.message?.content ?? "";
+
+  console.log("Grok raw response:", raw);
+
+  const cleaned = raw
+    .replace(/```json\s*/gi, "")
+    .replace(/```\s*/g, "")
+    .trim();
 
   try {
-    const parsed = JSON.parse(content);
+    const parsed = JSON.parse(cleaned);
     return NextResponse.json(parsed);
   } catch {
-    return NextResponse.json({ error: "Invalid JSON from Grok", raw: content }, { status: 500 });
+    console.error("JSON parse failed. Raw:", raw, "Cleaned:", cleaned);
+    return NextResponse.json({ error: "parse_failed", raw }, { status: 500 });
   }
 }
