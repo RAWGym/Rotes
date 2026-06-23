@@ -31,26 +31,27 @@ function DonutChart({ slices, label }: { slices: DonutSlice[]; label: string }) 
   const size = 130; const r = 50; const cx = size / 2; const cy = size / 2;
   const circ = 2 * Math.PI * r;
   const total = slices.reduce((s, x) => s + x.value, 0) || 1;
-  let offset = 0;
+
+  const computed = slices.reduce<{ dash: number; offset: number }[]>((acc, s) => {
+    const prev = acc[acc.length - 1];
+    const dash = (s.value / total) * circ;
+    return [...acc, { dash, offset: prev ? prev.offset + prev.dash : 0 }];
+  }, []);
+
   return (
     <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-      {slices.map((s, i) => {
-        const dash = (s.value / total) * circ;
-        const el = (
-          <circle
-            key={i}
-            cx={cx} cy={cy} r={r}
-            fill="none"
-            stroke={s.color}
-            strokeWidth={18}
-            strokeDasharray={`${dash} ${circ - dash}`}
-            strokeDashoffset={-offset}
-            style={{ transform: "rotate(-90deg)", transformOrigin: "center" }}
-          />
-        );
-        offset += dash;
-        return el;
-      })}
+      {slices.map((s, i) => (
+        <circle
+          key={i}
+          cx={cx} cy={cy} r={r}
+          fill="none"
+          stroke={s.color}
+          strokeWidth={18}
+          strokeDasharray={`${computed[i].dash} ${circ - computed[i].dash}`}
+          strokeDashoffset={-computed[i].offset}
+          style={{ transform: "rotate(-90deg)", transformOrigin: "center" }}
+        />
+      ))}
       <text x={cx} y={cy - 6} textAnchor="middle" fontSize={10} fill="#8A847D" fontFamily="-apple-system,sans-serif">Жизнь</text>
       <text x={cx} y={cy + 10} textAnchor="middle" fontSize={14} fontWeight={700} fill="#2A2A2A" fontFamily="-apple-system,sans-serif">100%</text>
     </svg>
@@ -264,9 +265,9 @@ export default function StatsPage() {
         </div>
       </Card>
 
-      {/* Баланс жизни + Ритм недели */}
-      <div className="mt-4 flex gap-3">
-        <Card className="flex-1 p-4">
+      {/* Баланс жизни + Ритм недели — свайп */}
+      <div className="-mx-5 mt-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-5 pb-2">
+        <Card className="shrink-0 snap-center p-4" style={{ width: "82vw", maxWidth: 340 }}>
           <p className="text-[17px] font-semibold" style={{ color: "#2A2A2A" }}>Баланс жизни</p>
           <div className="mt-3 flex items-center gap-3">
             <DonutChart slices={donutSlices} label="Жизнь" />
@@ -282,7 +283,7 @@ export default function StatsPage() {
           </div>
         </Card>
 
-        <Card className="flex-1 p-4">
+        <Card className="shrink-0 snap-center p-4" style={{ width: "82vw", maxWidth: 340 }}>
           <p className="text-[17px] font-semibold" style={{ color: "#2A2A2A" }}>Ритм недели</p>
           <p className="mt-0.5 text-[12px]" style={{ color: "#8A847D" }}>Когда вы наиболее продуктивны</p>
           <div className="mt-3">
