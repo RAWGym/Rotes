@@ -2,8 +2,18 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ChevronDown, ChevronUp, Plus, Target, Bot, AlertCircle, Clock, Zap } from "lucide-react";
-import { ProgressRing } from "@/components/ui/progress-ring";
+import {
+  ChevronDown,
+  ChevronUp,
+  Plus,
+  Target,
+  Bot,
+  AlertCircle,
+  Clock,
+  Zap,
+  Flame,
+  ChevronRight,
+} from "lucide-react";
 import { TaskDetailSheet } from "@/components/ui/task-detail-sheet";
 import { useTasks, useToggleTaskStatus, type Task } from "@/hooks/use-tasks";
 import { useProjects } from "@/hooks/use-projects";
@@ -24,6 +34,7 @@ function getCategoryLabel(category: string | null) {
     health: "Здоровье",
     finance: "Финансы",
     education: "Образование",
+    business: "Бизнес",
   };
   return category ? (map[category] ?? category) : "Другое";
 }
@@ -35,9 +46,7 @@ function isOverdue(task: Task) {
 
 function isDueToday(task: Task) {
   if (!task.deadline || task.status === "completed") return false;
-  const today = new Date();
-  const d = new Date(task.deadline);
-  return d.toDateString() === today.toDateString();
+  return new Date(task.deadline).toDateString() === new Date().toDateString();
 }
 
 function isDueTomorrow(task: Task) {
@@ -47,98 +56,145 @@ function isDueTomorrow(task: Task) {
   return new Date(task.deadline).toDateString() === tomorrow.toDateString();
 }
 
-type CategoryGroup = { category: string; label: string; tasks: Task[] };
+function isUrgent(task: Task) {
+  return (
+    task.priority === "high" ||
+    isOverdue(task) ||
+    isDueToday(task)
+  );
+}
 
-function groupTasksByCategory(tasks: Task[]): CategoryGroup[] {
-  const map: Record<string, Task[]> = {};
-  for (const task of tasks) {
-    const key = task.category ?? "other";
-    map[key] = map[key] ? [...map[key], task] : [task];
-  }
-  return Object.entries(map).map(([category, tasks]) => ({
-    category,
-    label: getCategoryLabel(category),
-    tasks,
-  }));
+function pluralTasks(n: number) {
+  if (n === 1) return "1 задача";
+  if (n >= 2 && n <= 4) return `${n} задачи`;
+  return `${n} задач`;
+}
+
+function formatDeadlineHint(task: Task) {
+  if (isOverdue(task)) return "просрочена";
+  if (isDueToday(task)) return "сегодня";
+  if (isDueTomorrow(task)) return "завтра";
+  if (task.deadline)
+    return new Date(task.deadline).toLocaleDateString("ru-RU", { day: "numeric", month: "short" });
+  return null;
+}
+
+type TaskRowProps = {
+  task: Task;
+  subtasks: Task[];
+  onToggle: (id: string) => void;
+  onOpen: (id: string) => void;
+  indent?: boolean;
+};
+
+function TaskRow({ task, subtasks, onToggle, onOpen, indent = false }: TaskRowProps) {
+  const hint = formatDeadlineHint(task);
+  const checked = task.status === "completed";
+
+  return (
+    <>
+      <div
+        className={`flex items-center gap-3 py-3 ${indent ? "pl-6" : ""} ${indent ? "border-l-2 border-foreground/10" : ""}`}
+      >
+        <div className="flex-1 cursor-pointer" onClick={() => onOpen(task.id)}>
+          <p className={checked ? "text-body text-foreground/40 line-through" : "text-body text-foreground"}>
+            {task.title}
+          </p>
+          {hint && (
+            <p className={`text-caption ${isOverdue(task) ? "text-priority-high" : "text-foreground/50"}`}>
+              Дедлайн: {hint}
+            </p>
+          )}
+        </div>
+        <button
+          type="button"
+          onClick={() => onToggle(task.id)}
+          className={
+            checked
+              ? "shrink-0 rounded-full bg-sage/25 px-3 py-1 text-caption text-sage"
+              : "shrink-0 rounded-full border border-foreground/15 px-3 py-1 text-caption text-foreground/60"
+          }
+        >
+          {checked ? "Выполнено" : "Выполнить"}
+        </button>
+      </div>
+      {subtasks.map((sub) => (
+        <TaskRow
+          key={sub.id}
+          task={sub}
+          subtasks={[]}
+          onToggle={onToggle}
+          onOpen={onOpen}
+          indent
+        />
+      ))}
+    </>
+  );
 }
 
 type CategoryCardProps = {
-  group: CategoryGroup;
+  label: string;
+  icon?: React.ReactNode;
+  tasks: Task[];
+  allTasks: Task[];
   onToggle: (id: string) => void;
-  onTaskClick: (id: string) => void;
+  onOpen: (id: string) => void;
+  accentClass?: string;
+  defaultOpen?: boolean;
 };
 
-function CategoryCard({ group, onToggle, onTaskClick }: CategoryCardProps) {
-  const [expanded, setExpanded] = useState(false);
-  const completed = group.tasks.filter((t) => t.status === "completed").length;
-  const total = group.tasks.length;
+function CategoryCard({
+  label,
+  icon,
+  tasks,
+  allTasks,
+  onToggle,
+  onOpen,
+  accentClass = "bg-accent/15 text-accent",
+  defaultOpen = false,
+}: CategoryCardProps) {
+  const [expanded, setExpanded] = useState(defaultOpen);
+  const parentTasks = tasks.filter((t) => !t.parent_task_id);
+  const completed = tasks.filter((t) => t.status === "completed").length;
 
   return (
-    <div className="rounded-2xl bg-card shadow-sm shadow-foreground/5">
+    <div className="overflow-hidden rounded-2xl bg-card shadow-sm shadow-foreground/5">
       <button
         type="button"
-        onClick={() => setExpanded((prev) => !prev)}
+        onClick={() => setExpanded((p) => !p)}
         className="flex w-full items-center justify-between p-4"
       >
         <div className="flex items-center gap-3">
-          <div>
-            <p className="text-left text-body font-medium text-foreground">{group.label}</p>
+          {icon && (
+            <div className={`flex h-8 w-8 items-center justify-center rounded-full ${accentClass}`}>
+              {icon}
+            </div>
+          )}
+          <div className="text-left">
+            <p className="text-body font-medium text-foreground">{label}</p>
             <p className="text-caption text-foreground/50">
-              {completed} из {total} выполнено
+              {pluralTasks(tasks.length)}
+              {completed > 0 && ` · ${completed} выполнено`}
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <span className="rounded-full bg-accent/15 px-2.5 py-0.5 text-caption font-medium text-accent">
-            {total}
-          </span>
-          {expanded ? (
-            <ChevronUp size={16} className="text-foreground/40" />
-          ) : (
-            <ChevronDown size={16} className="text-foreground/40" />
-          )}
-        </div>
+        {expanded ? (
+          <ChevronUp size={16} className="shrink-0 text-foreground/40" />
+        ) : (
+          <ChevronDown size={16} className="shrink-0 text-foreground/40" />
+        )}
       </button>
 
       {expanded && (
-        <div className="border-t border-foreground/5 px-4 pb-3">
-          {group.tasks.map((task) => (
-            <div
+        <div className="divide-y divide-foreground/5 border-t border-foreground/5 px-4">
+          {parentTasks.map((task) => (
+            <TaskRow
               key={task.id}
-              className="flex cursor-pointer items-center gap-3 py-3"
-              onClick={() => onTaskClick(task.id)}
-            >
-              <button
-                type="button"
-                aria-label="Выполнить"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onToggle(task.id);
-                }}
-                className={
-                  task.status === "completed"
-                    ? "h-5 w-5 shrink-0 rounded-full bg-accent"
-                    : "h-5 w-5 shrink-0 rounded-full border-2 border-foreground/20"
-                }
-              />
-              <div className="flex-1">
-                <p
-                  className={
-                    task.status === "completed"
-                      ? "text-body text-foreground/40 line-through"
-                      : "text-body text-foreground"
-                  }
-                >
-                  {task.title}
-                </p>
-                {task.deadline && (
-                  <p className={`text-caption ${isOverdue(task) ? "text-priority-high" : "text-foreground/50"}`}>
-                    {isOverdue(task) ? "Просрочено · " : ""}
-                    {new Date(task.deadline).toLocaleDateString("ru-RU", { day: "numeric", month: "short" })}
-                  </p>
-                )}
-              </div>
-            </div>
+              task={task}
+              subtasks={allTasks.filter((t) => t.parent_task_id === task.id)}
+              onToggle={onToggle}
+              onOpen={onOpen}
+            />
           ))}
         </div>
       )}
@@ -154,50 +210,62 @@ export default function DashboardPage() {
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
 
   const activeTasks = (tasks ?? []).filter((t) => t.status !== "completed");
-  const total = tasks?.length ?? 0;
-  const completed = tasks?.filter((t) => t.status === "completed").length ?? 0;
-  const progress = total > 0 ? Math.round((completed / total) * 100) : 0;
+  const urgentTasks = activeTasks.filter(isUrgent);
 
-  const groups = groupTasksByCategory(activeTasks);
+  const categoryMap: Record<string, Task[]> = {};
+  for (const task of activeTasks.filter((t) => !isUrgent(t) && !t.parent_task_id)) {
+    const key = task.category ?? "other";
+    categoryMap[key] = categoryMap[key] ? [...categoryMap[key], task] : [task];
+  }
 
   const overdue = activeTasks.filter(isOverdue);
-  const dueToday = activeTasks.filter(isDueToday);
+  const dueToday = activeTasks.filter((t) => isDueToday(t) && !isOverdue(t));
   const dueTomorrow = activeTasks.filter(isDueTomorrow);
+  const hasAttention = overdue.length > 0 || dueToday.length > 0 || dueTomorrow.length > 0 || activeTasks.length >= 7;
 
   const selectedTask = tasks?.find((t) => t.id === selectedTaskId) ?? null;
 
   function handleToggle(id: string) {
     const task = tasks?.find((t) => t.id === id);
     if (!task) return;
-    const nextStatus = task.status === "completed" ? "active" : "completed";
-    toggleTask.mutate({ id, status: nextStatus });
+    toggleTask.mutate({ id, status: task.status === "completed" ? "active" : "completed" });
   }
-
-  const hasAttention = overdue.length > 0 || dueToday.length > 0 || dueTomorrow.length > 0;
 
   return (
     <div className="p-6">
-      <div className="flex items-start justify-between">
-        <div>
-          <p className="text-caption text-foreground/60">{getGreeting()}</p>
-          <h1 className="text-h1">{profile?.name ?? "..."}</h1>
-        </div>
-        <ProgressRing value={progress} size={56} strokeWidth={5} />
+      <div className="mb-8">
+        <p className="text-caption text-foreground/60">{getGreeting()}</p>
+        <h1 className="text-h1">{profile?.name ?? "..."}</h1>
       </div>
 
-      <h2 className="mt-8 text-h2">На сегодня</h2>
-
+      <h2 className="text-h2">На сегодня</h2>
       <div className="mt-3 flex flex-col gap-3">
         {isLoading && <p className="text-caption text-foreground/50">Загрузка...</p>}
         {!isLoading && activeTasks.length === 0 && (
           <p className="text-caption text-foreground/50">Все задачи выполнены 🎉</p>
         )}
-        {groups.map((group) => (
+
+        {urgentTasks.length > 0 && (
           <CategoryCard
-            key={group.category}
-            group={group}
+            label="Срочные"
+            icon={<Flame size={14} />}
+            accentClass="bg-priority-high/15 text-priority-high"
+            tasks={urgentTasks}
+            allTasks={tasks ?? []}
             onToggle={handleToggle}
-            onTaskClick={setSelectedTaskId}
+            onOpen={setSelectedTaskId}
+            defaultOpen
+          />
+        )}
+
+        {Object.entries(categoryMap).map(([category, catTasks]) => (
+          <CategoryCard
+            key={category}
+            label={getCategoryLabel(category)}
+            tasks={catTasks}
+            allTasks={tasks ?? []}
+            onToggle={handleToggle}
+            onOpen={setSelectedTaskId}
           />
         ))}
       </div>
@@ -209,31 +277,57 @@ export default function DashboardPage() {
             {overdue.length > 0 && (
               <div className="flex items-start gap-3 rounded-2xl bg-priority-high/10 p-4">
                 <AlertCircle size={18} className="mt-0.5 shrink-0 text-priority-high" />
-                <p className="text-body text-foreground">
-                  {overdue.length === 1
-                    ? `1 просроченная задача — «${overdue[0].title}»`
-                    : `${overdue.length} просроченных задачи`}
-                </p>
+                <div>
+                  <p className="text-body font-medium text-foreground">
+                    {overdue.length === 1 ? "1 просроченная задача" : `${overdue.length} просроченных задачи`}
+                  </p>
+                  {overdue.slice(0, 2).map((t) => (
+                    <button
+                      key={t.id}
+                      type="button"
+                      onClick={() => setSelectedTaskId(t.id)}
+                      className="mt-1 flex items-center gap-1 text-caption text-foreground/60"
+                    >
+                      <ChevronRight size={12} />
+                      {t.title}
+                    </button>
+                  ))}
+                </div>
               </div>
             )}
+
             {(dueToday.length > 0 || dueTomorrow.length > 0) && (
               <div className="flex items-start gap-3 rounded-2xl bg-priority-medium/10 p-4">
                 <Clock size={18} className="mt-0.5 shrink-0 text-priority-medium" />
-                <p className="text-body text-foreground">
-                  {[
-                    dueToday.length > 0 && `${dueToday.length} с дедлайном сегодня`,
-                    dueTomorrow.length > 0 && `${dueTomorrow.length} с дедлайном завтра`,
-                  ]
-                    .filter(Boolean)
-                    .join(", ")}
-                </p>
+                <div>
+                  <p className="text-body font-medium text-foreground">
+                    {[
+                      dueToday.length > 0 && `${dueToday.length} с дедлайном сегодня`,
+                      dueTomorrow.length > 0 && `${dueTomorrow.length} с дедлайном завтра`,
+                    ]
+                      .filter(Boolean)
+                      .join(", ")}
+                  </p>
+                  {[...dueToday, ...dueTomorrow].slice(0, 2).map((t) => (
+                    <button
+                      key={t.id}
+                      type="button"
+                      onClick={() => setSelectedTaskId(t.id)}
+                      className="mt-1 flex items-center gap-1 text-caption text-foreground/60"
+                    >
+                      <ChevronRight size={12} />
+                      {t.title}
+                    </button>
+                  ))}
+                </div>
               </div>
             )}
-            {activeTasks.length >= 5 && (
+
+            {activeTasks.length >= 7 && (
               <div className="flex items-start gap-3 rounded-2xl bg-sage/20 p-4">
                 <Zap size={18} className="mt-0.5 shrink-0 text-sage" />
                 <p className="text-body text-foreground">
-                  Много активных задач — стоит выполнить несколько, чтобы снизить нагрузку
+                  {activeTasks.length} активных задач — стоит выполнить несколько, чтобы снизить нагрузку
                 </p>
               </div>
             )}
@@ -250,7 +344,7 @@ export default function DashboardPage() {
           <Bot size={20} />
           <div>
             <p className="text-body font-medium">Создать задачу с ИИ</p>
-            <p className="text-caption opacity-80">Опишите — ИИ всё оформит</p>
+            <p className="text-caption opacity-80">Опишите — ИИ всё оформит сам</p>
           </div>
         </Link>
         <div className="flex gap-2">
@@ -278,7 +372,11 @@ export default function DashboardPage() {
         </Link>
       </div>
 
-      <TaskDetailSheet task={selectedTask} projects={projects ?? []} onClose={() => setSelectedTaskId(null)} />
+      <TaskDetailSheet
+        task={selectedTask}
+        projects={projects ?? []}
+        onClose={() => setSelectedTaskId(null)}
+      />
     </div>
   );
 }
