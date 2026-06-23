@@ -61,6 +61,7 @@ export type Database = {
           deadline: string | null
           description: string | null
           id: string
+          is_main: boolean
           target_value: number | null
           title: string
           updated_at: string | null
@@ -73,6 +74,7 @@ export type Database = {
           deadline?: string | null
           description?: string | null
           id?: string
+          is_main?: boolean
           target_value?: number | null
           title: string
           updated_at?: string | null
@@ -85,6 +87,7 @@ export type Database = {
           deadline?: string | null
           description?: string | null
           id?: string
+          is_main?: boolean
           target_value?: number | null
           title?: string
           updated_at?: string | null
