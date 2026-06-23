@@ -55,12 +55,12 @@ function pluralTasks(n: number) {
   return `${n} задач`;
 }
 function deadlineHint(t: Task) {
-  if (isOverdue(t))    return { text: "просрочена", color: "#C97B63" };
-  if (isDueToday(t))   return { text: "до сегодня", color: "#D9B38C" };
-  if (isDueTomorrow(t))return { text: "до завтра",  color: "#8CAA73" };
+  if (isOverdue(t))     return { text: "просрочена",  color: "#C97B63" };
+  if (isDueToday(t))    return { text: "до сегодня",  color: "#D9B38C" };
+  if (isDueTomorrow(t)) return { text: "до завтра",   color: "#8CAA73" };
   if (t.deadline) return {
     text: new Date(t.deadline).toLocaleDateString("ru-RU", { day: "numeric", month: "short" }),
-    color: "rgba(42,42,42,0.45)",
+    color: "#8A847D",
   };
   return null;
 }
@@ -79,7 +79,7 @@ function GlassButton({ icon: Icon, badge }: { icon: React.ElementType; badge?: n
       <Icon size={19} color="#2A2A2A" />
       {badge ? (
         <span
-          className="absolute right-2 top-2 flex h-4 w-4 items-center justify-center rounded-full text-[9px] font-bold text-white"
+          className="absolute right-2 top-2 flex h-4 w-4 items-center justify-center rounded-full text-micro font-medium text-white"
           style={{ background: "var(--accent)" }}
         >
           {badge}
@@ -99,20 +99,30 @@ function TaskRow({ task, subtasks, onToggle, onOpen, indent = false }: TaskRowPr
   const done = task.status === "completed";
   return (
     <>
-      <div className={`flex items-center gap-3 py-3 ${indent ? "pl-5 border-l-2 border-foreground/10 ml-2" : ""}`}>
+      <div className={`flex items-center gap-3 py-3.5 ${indent ? "pl-5 border-l-2 border-foreground/10 ml-2" : ""}`}>
         <button type="button" onClick={() => onOpen(task.id)} className="flex-1 text-left">
-          <p className={done ? "text-body text-foreground/40 line-through" : "text-body text-foreground"}>
+          <p
+            className="text-body-lg"
+            style={{
+              color: done ? "rgba(42,42,42,0.35)" : "var(--foreground)",
+              textDecoration: done ? "line-through" : "none",
+            }}
+          >
             {task.title}
           </p>
           {hint && (
-            <p className="text-caption mt-0.5" style={{ color: hint.color }}>⏰ {hint.text}</p>
+            <p className="text-caption mt-1" style={{ color: hint.color }}>
+              ⏰ {hint.text}
+            </p>
           )}
         </button>
         <button
           type="button"
           onClick={() => onToggle(task.id)}
-          className="shrink-0 rounded-full px-3 py-1.5 text-caption font-medium"
-          style={done ? { background: "#EEF5E8", color: "#8CAA73" } : { background: "#EEF5E8", color: "#5A8A55" }}
+          className="shrink-0 rounded-full px-3.5 py-2 text-micro font-medium uppercase tracking-wide"
+          style={done
+            ? { background: "#EEF5E8", color: "#8CAA73" }
+            : { background: "#EEF5E8", color: "#5A8A55" }}
         >
           {done ? "Выполнено" : "Выполнить"}
         </button>
@@ -146,30 +156,37 @@ function CategoryCard({
       style={{
         background: cardBg ?? "var(--card)",
         border: borderColor ? `1px solid ${borderColor}` : "none",
-        boxShadow: "0 2px 12px rgba(0,0,0,0.04)",
+        boxShadow: "0 2px 16px rgba(0,0,0,0.04)",
       }}
     >
-      <button type="button" onClick={() => setOpen((p) => !p)} className="flex w-full items-center gap-3 px-5 py-4">
+      <button
+        type="button"
+        onClick={() => setOpen((p) => !p)}
+        className="flex w-full items-center gap-3 px-5 py-4"
+      >
         {emoji && (
           <span
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-lg"
-            style={{ background: bgEmoji ?? "rgba(255,255,255,0.7)" }}
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full"
+            style={{ background: bgEmoji ?? "rgba(255,255,255,0.7)", fontSize: 18 }}
           >
             {emoji}
           </span>
         )}
         <div className="flex-1 text-left">
-          <p className="text-body font-semibold" style={{ color: isUrgentCard ? "#C97B63" : "var(--foreground)" }}>
+          <p
+            className="text-card-title"
+            style={{ color: isUrgentCard ? "#C97B63" : "var(--foreground)" }}
+          >
             {label}
           </p>
           {!isUrgentCard && (
-            <p className="text-caption text-foreground/50">
+            <p className="text-caption mt-0.5" style={{ color: "var(--caption-color)" }}>
               {pluralTasks(tasks.length)}{completed > 0 ? ` · ${completed} выполнено` : ""}
             </p>
           )}
         </div>
         <span
-          className="rounded-full px-2.5 py-0.5 text-caption font-bold"
+          className="text-micro font-medium rounded-full px-2.5 py-1"
           style={
             isUrgentCard
               ? { background: "rgba(255,255,255,0.8)", color: "#C97B63" }
@@ -178,12 +195,17 @@ function CategoryCard({
         >
           {tasks.length}
         </span>
-        {open ? <ChevronUp size={16} className="shrink-0 text-foreground/40" />
-               : <ChevronDown size={16} className="shrink-0 text-foreground/40" />}
+        {open
+          ? <ChevronUp size={15} className="shrink-0" style={{ color: "var(--caption-color)" }} />
+          : <ChevronDown size={15} className="shrink-0" style={{ color: "var(--caption-color)" }} />
+        }
       </button>
 
       {open && (
-        <div className="divide-y divide-foreground/5 border-t border-foreground/5 px-5">
+        <div
+          className="divide-y px-5"
+          style={{ borderTop: "1px solid rgba(42,42,42,0.06)", borderColor: "rgba(42,42,42,0.06)" }}
+        >
           {parents.map((t) => (
             <TaskRow
               key={t.id} task={t}
@@ -215,8 +237,8 @@ export default function DashboardPage() {
     catMap[k] = catMap[k] ? [...catMap[k], t] : [t];
   }
 
-  const overdue    = active.filter(isOverdue);
-  const dueToday   = active.filter((t) => isDueToday(t) && !isOverdue(t));
+  const overdue     = active.filter(isOverdue);
+  const dueToday    = active.filter((t) => isDueToday(t) && !isOverdue(t));
   const dueTomorrow = active.filter(isDueTomorrow);
   const hasAttention = overdue.length > 0 || dueToday.length > 0 || dueTomorrow.length > 0 || active.length >= 7;
   const selectedTask = allTasks.find((t) => t.id === selectedTaskId) ?? null;
@@ -229,10 +251,17 @@ export default function DashboardPage() {
 
   return (
     <div className="px-5 pt-8">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <span
-          className="font-serif text-[44px] leading-none"
-          style={{ color: "#C99E73", fontFamily: "var(--font-cormorant), Georgia, serif", letterSpacing: "0.01em" }}
+          style={{
+            fontFamily: "var(--font-cormorant), 'Cormorant Garamond', Georgia, serif",
+            fontSize: 44,
+            fontWeight: 400,
+            lineHeight: 1,
+            color: "#C99E73",
+            letterSpacing: "0.01em",
+          }}
         >
           Rotes
         </span>
@@ -242,18 +271,32 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      <div className="mt-5">
-        <p className="text-[20px] font-medium" style={{ color: "#B58D6A" }}>{getGreeting()}</p>
-        <h1 className="text-[42px] font-bold leading-tight" style={{ color: "var(--foreground)" }}>
+      {/* Greeting */}
+      <div className="mt-6">
+        <p
+          style={{
+            fontFamily: "var(--font-sans)",
+            fontSize: 20,
+            fontWeight: 500,
+            color: "#B58D6A",
+            lineHeight: 1.2,
+          }}
+        >
+          {getGreeting()}
+        </p>
+        <h1 className="text-display-lg mt-1" style={{ color: "var(--foreground)", lineHeight: 1.05 }}>
           {profile?.name ?? "..."}!
         </h1>
       </div>
 
-      <h2 className="mt-7 text-h2 text-foreground">На сегодня</h2>
-      <div className="mt-3 flex flex-col gap-3">
-        {isLoading && <p className="text-caption text-foreground/50">Загрузка...</p>}
+      {/* На сегодня */}
+      <h2 className="text-section mt-10" style={{ color: "var(--foreground)" }}>На сегодня</h2>
+      <div className="mt-4 flex flex-col gap-3">
+        {isLoading && (
+          <p className="text-body" style={{ color: "var(--caption-color)" }}>Загрузка...</p>
+        )}
         {!isLoading && active.length === 0 && (
-          <p className="text-caption text-foreground/50">Все задачи выполнены 🎉</p>
+          <p className="text-body" style={{ color: "var(--caption-color)" }}>Все задачи выполнены 🎉</p>
         )}
         {urgent.length > 0 && (
           <CategoryCard
@@ -276,22 +319,25 @@ export default function DashboardPage() {
         })}
       </div>
 
+      {/* Стоит обратить внимание */}
       {hasAttention && (
         <>
-          <h2 className="mt-7 text-h2 text-foreground">Стоит обратить внимание!</h2>
-          <div className="mt-3 grid grid-cols-3 gap-2">
+          <h2 className="text-section mt-12" style={{ color: "var(--foreground)" }}>
+            Стоит обратить внимание
+          </h2>
+          <div className="mt-4 grid grid-cols-3 gap-2">
             {overdue.length > 0 && (
               <button
                 type="button"
                 onClick={() => overdue[0] && setSelectedTaskId(overdue[0].id)}
-                className="flex flex-col gap-2 rounded-2xl p-3 text-left"
-                style={{ background: "#FFF0EE", minHeight: 110 }}
+                className="flex flex-col gap-2 rounded-2xl p-4 text-left"
+                style={{ background: "#FFF0EE", minHeight: 112 }}
               >
-                <AlertCircle size={18} color="#C97B63" opacity={0.7} />
-                <p className="text-caption font-medium leading-tight text-foreground/80">
+                <AlertCircle size={18} color="#C97B63" opacity={0.75} />
+                <p className="text-caption font-medium leading-tight" style={{ color: "var(--foreground)" }}>
                   {overdue.length} просроченная задача
                 </p>
-                <ChevronRight size={13} color="rgba(42,42,42,0.4)" className="mt-auto" />
+                <ChevronRight size={13} style={{ color: "var(--caption-color)", marginTop: "auto" }} />
               </button>
             )}
             {(dueToday.length > 0 || dueTomorrow.length > 0) && (
@@ -301,70 +347,74 @@ export default function DashboardPage() {
                   const t = dueToday[0] ?? dueTomorrow[0];
                   if (t) setSelectedTaskId(t.id);
                 }}
-                className="flex flex-col gap-2 rounded-2xl p-3 text-left"
-                style={{ background: "#FEF6EE", minHeight: 110 }}
+                className="flex flex-col gap-2 rounded-2xl p-4 text-left"
+                style={{ background: "#FEF6EE", minHeight: 112 }}
               >
-                <Clock size={18} color="#D9B38C" opacity={0.8} />
-                <p className="text-caption font-medium leading-tight text-foreground/80">
+                <Clock size={18} color="#D9B38C" opacity={0.85} />
+                <p className="text-caption font-medium leading-tight" style={{ color: "var(--foreground)" }}>
                   {dueToday.length + dueTomorrow.length} с дедлайном сегодня
                 </p>
-                <ChevronRight size={13} color="rgba(42,42,42,0.4)" className="mt-auto" />
+                <ChevronRight size={13} style={{ color: "var(--caption-color)", marginTop: "auto" }} />
               </button>
             )}
             {active.length >= 7 && (
-              <div className="flex flex-col gap-2 rounded-2xl p-3" style={{ background: "#EEF6EE", minHeight: 110 }}>
-                <Zap size={18} color="#8CAA73" opacity={0.8} />
-                <p className="text-caption font-medium leading-tight text-foreground/80">
-                  Снизьте нагрузку — много активных задач
+              <div
+                className="flex flex-col gap-2 rounded-2xl p-4"
+                style={{ background: "#EEF6EE", minHeight: 112 }}
+              >
+                <Zap size={18} color="#8CAA73" opacity={0.85} />
+                <p className="text-caption font-medium leading-tight" style={{ color: "var(--foreground)" }}>
+                  Снизьте нагрузку — много задач
                 </p>
-                <ChevronRight size={13} color="rgba(42,42,42,0.4)" className="mt-auto" />
+                <ChevronRight size={13} style={{ color: "var(--caption-color)", marginTop: "auto" }} />
               </div>
             )}
           </div>
         </>
       )}
 
-      <h2 className="mt-7 text-h2 text-foreground">Быстрые действия</h2>
-      <div className="mt-3 flex flex-col gap-2">
+      {/* Быстрые действия */}
+      <h2 className="text-section mt-12" style={{ color: "var(--foreground)" }}>Быстрые действия</h2>
+      <div className="mt-4 flex flex-col gap-2.5">
         <Link
           href="/assistant?mode=task"
           className="flex items-center justify-between rounded-3xl p-5"
           style={{ background: "linear-gradient(135deg, #F8E8D7, #F3DCC1)" }}
         >
           <div>
-            <p className="text-h2 font-bold text-foreground">Создать задачу с ИИ</p>
-            <p className="mt-1 text-caption text-foreground/60">
-              Опишите задачу в пару слов, а я всё организую
+            <p className="text-card-title" style={{ color: "var(--foreground)" }}>Создать задачу с ИИ</p>
+            <p className="text-caption mt-1.5" style={{ color: "#8A847D" }}>
+              Опишите в пару слов — я всё организую
             </p>
           </div>
           <div
-            className="flex h-14 w-14 items-center justify-center rounded-2xl"
+            className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl"
             style={{ background: "rgba(255,255,255,0.5)" }}
           >
-            <Bot size={28} color="#B58D6A" />
+            <Bot size={26} color="#B58D6A" />
           </div>
         </Link>
 
-        <div className="flex gap-2">
+        <div className="flex gap-2.5">
           <Link
             href="/tasks/new"
-            className="flex flex-1 items-center gap-2 rounded-2xl p-4"
+            className="flex flex-1 items-center gap-3 rounded-2xl p-4"
             style={{ background: "var(--card)", boxShadow: "0 2px 12px rgba(0,0,0,0.04)" }}
           >
             <div className="flex h-9 w-9 items-center justify-center rounded-full" style={{ background: "#FEF3E8" }}>
-              <Plus size={18} color="#D9B38C" />
+              <Plus size={17} color="#D9B38C" />
             </div>
-            <span className="text-body text-foreground">Добавить задачу</span>
+            <span className="text-card-title" style={{ color: "var(--foreground)" }}>Добавить задачу</span>
           </Link>
           <Link
             href="/goals/new"
-            className="flex flex-1 items-center gap-2 rounded-2xl p-4"
+            className="flex flex-1 items-center gap-3 rounded-2xl p-4"
             style={{ background: "var(--card)", boxShadow: "0 2px 12px rgba(0,0,0,0.04)" }}
           >
             <div className="flex h-9 w-9 items-center justify-center rounded-full" style={{ background: "#EEF5E8" }}>
-              <Target size={18} color="#8CAA73" />
+              <Target size={17} color="#8CAA73" />
             </div>
-            <span className="text-body text-foreground">Добавить цель</span>
+            <span className="text-card-title" style={{ color: "var(--foreground)" }}>Добавить цель</span>
           </Link>
         </div>
 
@@ -374,14 +424,14 @@ export default function DashboardPage() {
           style={{ background: "#F3EDFF", boxShadow: "0 2px 12px rgba(0,0,0,0.04)" }}
         >
           <div>
-            <p className="text-body font-medium text-foreground">Помощник</p>
-            <p className="text-caption text-foreground/50">Ваш личный ассистент Rotes</p>
+            <p className="text-card-title" style={{ color: "var(--foreground)" }}>Помощник</p>
+            <p className="text-caption mt-1" style={{ color: "#8A847D" }}>Ваш личный ассистент Rotes</p>
           </div>
           <div
             className="flex h-10 w-10 items-center justify-center rounded-full"
             style={{ background: "rgba(199,187,232,0.4)" }}
           >
-            <Bot size={20} color="#9B8EC4" />
+            <Bot size={19} color="#9B8EC4" />
           </div>
         </Link>
 
@@ -391,14 +441,16 @@ export default function DashboardPage() {
           style={{ background: "var(--card)", boxShadow: "0 2px 12px rgba(0,0,0,0.04)" }}
         >
           <div>
-            <p className="text-body font-medium text-foreground">Анализировать задачи</p>
-            <p className="text-caption text-foreground/50">ИИ расставит приоритеты и найдёт узкие места</p>
+            <p className="text-card-title" style={{ color: "var(--foreground)" }}>Анализировать задачи</p>
+            <p className="text-caption mt-1" style={{ color: "#8A847D" }}>
+              ИИ расставит приоритеты и найдёт узкие места
+            </p>
           </div>
           <div
             className="flex h-10 w-10 items-center justify-center rounded-full"
             style={{ background: "#EBF5EB" }}
           >
-            <Brain size={20} color="#8CAA73" />
+            <Brain size={19} color="#8CAA73" />
           </div>
         </Link>
       </div>
