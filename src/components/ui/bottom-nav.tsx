@@ -24,13 +24,13 @@ export function BottomNav() {
       style={{ bottom: "max(1.25rem, calc(env(safe-area-inset-bottom) + 0.75rem))" }}
     >
       <div
-        className="flex items-center justify-around rounded-full border px-2 py-2"
+        className="flex items-center justify-around rounded-full px-2 py-2"
         style={{
-          background: "rgba(255,255,255,0.72)",
-          backdropFilter: "blur(40px)",
-          WebkitBackdropFilter: "blur(40px)",
-          borderColor: "rgba(255,255,255,0.8)",
-          boxShadow: "0 12px 40px rgba(0,0,0,0.05), 0 1px 0 rgba(255,255,255,0.6) inset",
+          background: "rgba(255,255,255,0.6)",
+          backdropFilter: "blur(50px)",
+          WebkitBackdropFilter: "blur(50px)",
+          border: "0.5px solid rgba(255,255,255,0.9)",
+          boxShadow: "0 16px 48px rgba(0,0,0,0.04), 0 1px 0 rgba(255,255,255,0.7) inset",
         }}
       >
         {navItems.map(({ href, label, icon: Icon }) => {
@@ -39,13 +39,13 @@ export function BottomNav() {
             <Link key={href} href={href} aria-label={label} className="flex flex-col items-center gap-0.5 py-1">
               <span
                 className="flex h-11 w-11 items-center justify-center rounded-full"
-                style={isActive ? { background: "var(--accent)" } : {}}
+                style={isActive ? { background: "var(--accent)", boxShadow: "0 4px 12px rgba(217,179,140,0.4)" } : {}}
               >
-                <Icon size={20} strokeWidth={2} color={isActive ? "#FCFAF7" : "rgba(42,42,42,0.45)"} />
+                <Icon size={20} strokeWidth={2} color={isActive ? "#FCFAF7" : "rgba(42,42,42,0.4)"} />
               </span>
               <span
                 className="text-[10px] font-medium leading-none"
-                style={{ color: isActive ? "var(--accent)" : "rgba(42,42,42,0.45)" }}
+                style={{ color: isActive ? "var(--accent)" : "rgba(42,42,42,0.4)" }}
               >
                 {label}
               </span>
