@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
-const GROK_API_URL = "https://api.x.ai/v1/chat/completions";
+const GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions";
 
 const MAX_MESSAGES = 20;
 const MAX_MESSAGE_LENGTH = 2000;
@@ -83,16 +83,16 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "No valid user messages" }, { status: 400 });
   }
 
-  let grokResponse: Response;
+  let groqResponse: Response;
   try {
-    grokResponse = await fetch(GROK_API_URL, {
+    groqResponse = await fetch(GROQ_API_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${process.env.GROK_API_KEY}`,
+        Authorization: `Bearer ${process.env.GROQ_API_KEY}`
       },
       body: JSON.stringify({
-        model: "grok-3-mini",
+        model: "llama-3.3-70b-versatile",
         messages: [
           { role: "system", content: getSystemPrompt() },
           ...messages,
@@ -102,18 +102,18 @@ export async function POST(request: NextRequest) {
       }),
     });
   } catch (err) {
-    console.error("Grok fetch error:", err);
+    console.error("Groq fetch error:", err);
     return NextResponse.json({ error: "AI service unavailable" }, { status: 502 });
   }
 
-  if (!grokResponse.ok) {
-    console.error("Grok API error status:", grokResponse.status);
+  if (!groqResponse.ok) {
+    console.error("Groq API error status:", groqResponse.status);
     return NextResponse.json({ error: "AI service error" }, { status: 502 });
   }
 
   let data: unknown;
   try {
-    data = await grokResponse.json();
+    data = await groqResponse.json();
   } catch {
     return NextResponse.json({ error: "AI service returned invalid response" }, { status: 502 });
   }
@@ -139,7 +139,7 @@ export async function POST(request: NextRequest) {
       deadline: typeof parsed.deadline === "string" && /^\d{4}-\d{2}-\d{2}$/.test(parsed.deadline)
         ? parsed.deadline
         : null,
-      description: parsed.description ? sanitizeString(parsed.description, 500) : null,
+      description: parsed.description ? sanitizeString(parsed.description as string, 500) : null,
       question: parsed.question ? sanitizeString(parsed.question as string, 300) : undefined,
     };
 
