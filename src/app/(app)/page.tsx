@@ -1,44 +1,149 @@
-﻿"use client";
+"use client";
 
 import { useState } from "react";
 import Link from "next/link";
-import {
-  Bell,
-  Plus,
-  Target,
-  FileText,
-  Sparkles,
-  Briefcase,
-  Home as HomeIcon,
-  type LucideIcon,
-} from "lucide-react";
+import { ChevronDown, ChevronUp, Plus, Target, Bot, AlertCircle, Clock, Zap } from "lucide-react";
 import { ProgressRing } from "@/components/ui/progress-ring";
-import { TaskCard } from "@/components/ui/task-card";
-import { QuickActionButton } from "@/components/ui/quick-action-button";
 import { TaskDetailSheet } from "@/components/ui/task-detail-sheet";
 import { useTasks, useToggleTaskStatus, type Task } from "@/hooks/use-tasks";
 import { useProjects } from "@/hooks/use-projects";
 import { useProfile } from "@/hooks/use-profile";
 
-const filters = [
-  { value: "all", label: "Все" },
-  { value: "work", label: "Работа" },
-  { value: "personal", label: "Личное" },
-];
+function getGreeting() {
+  const hour = new Date().getHours();
+  if (hour >= 5 && hour < 12) return "Доброе утро,";
+  if (hour >= 12 && hour < 17) return "Добрый день,";
+  if (hour >= 17 && hour < 22) return "Добрый вечер,";
+  return "Доброй ночи,";
+}
 
-const categoryMeta: Record<string, { label: string; icon: LucideIcon }> = {
-  work: { label: "Работа", icon: Briefcase },
-  personal: { label: "Личное", icon: HomeIcon },
+function getCategoryLabel(category: string | null) {
+  const map: Record<string, string> = {
+    work: "Работа",
+    personal: "Личное",
+    health: "Здоровье",
+    finance: "Финансы",
+    education: "Образование",
+  };
+  return category ? (map[category] ?? category) : "Другое";
+}
+
+function isOverdue(task: Task) {
+  if (!task.deadline || task.status === "completed") return false;
+  return new Date(task.deadline) < new Date(new Date().setHours(0, 0, 0, 0));
+}
+
+function isDueToday(task: Task) {
+  if (!task.deadline || task.status === "completed") return false;
+  const today = new Date();
+  const d = new Date(task.deadline);
+  return d.toDateString() === today.toDateString();
+}
+
+function isDueTomorrow(task: Task) {
+  if (!task.deadline || task.status === "completed") return false;
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  return new Date(task.deadline).toDateString() === tomorrow.toDateString();
+}
+
+type CategoryGroup = { category: string; label: string; tasks: Task[] };
+
+function groupTasksByCategory(tasks: Task[]): CategoryGroup[] {
+  const map: Record<string, Task[]> = {};
+  for (const task of tasks) {
+    const key = task.category ?? "other";
+    map[key] = map[key] ? [...map[key], task] : [task];
+  }
+  return Object.entries(map).map(([category, tasks]) => ({
+    category,
+    label: getCategoryLabel(category),
+    tasks,
+  }));
+}
+
+type CategoryCardProps = {
+  group: CategoryGroup;
+  onToggle: (id: string) => void;
+  onTaskClick: (id: string) => void;
 };
 
-function groupByCategory(tasks: Task[]) {
-  const groups: Record<string, Task[]> = {};
-  for (const task of tasks) {
-    const key = task.category && categoryMeta[task.category] ? task.category : "other";
-    groups[key] = groups[key] ? [...groups[key], task] : [task];
-  }
-  const order = ["work", "personal", "other"];
-  return order.filter((key) => groups[key]?.length).map((key) => ({ key, items: groups[key] }));
+function CategoryCard({ group, onToggle, onTaskClick }: CategoryCardProps) {
+  const [expanded, setExpanded] = useState(false);
+  const completed = group.tasks.filter((t) => t.status === "completed").length;
+  const total = group.tasks.length;
+
+  return (
+    <div className="rounded-2xl bg-card shadow-sm shadow-foreground/5">
+      <button
+        type="button"
+        onClick={() => setExpanded((prev) => !prev)}
+        className="flex w-full items-center justify-between p-4"
+      >
+        <div className="flex items-center gap-3">
+          <div>
+            <p className="text-left text-body font-medium text-foreground">{group.label}</p>
+            <p className="text-caption text-foreground/50">
+              {completed} из {total} выполнено
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="rounded-full bg-accent/15 px-2.5 py-0.5 text-caption font-medium text-accent">
+            {total}
+          </span>
+          {expanded ? (
+            <ChevronUp size={16} className="text-foreground/40" />
+          ) : (
+            <ChevronDown size={16} className="text-foreground/40" />
+          )}
+        </div>
+      </button>
+
+      {expanded && (
+        <div className="border-t border-foreground/5 px-4 pb-3">
+          {group.tasks.map((task) => (
+            <div
+              key={task.id}
+              className="flex cursor-pointer items-center gap-3 py-3"
+              onClick={() => onTaskClick(task.id)}
+            >
+              <button
+                type="button"
+                aria-label="Выполнить"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onToggle(task.id);
+                }}
+                className={
+                  task.status === "completed"
+                    ? "h-5 w-5 shrink-0 rounded-full bg-accent"
+                    : "h-5 w-5 shrink-0 rounded-full border-2 border-foreground/20"
+                }
+              />
+              <div className="flex-1">
+                <p
+                  className={
+                    task.status === "completed"
+                      ? "text-body text-foreground/40 line-through"
+                      : "text-body text-foreground"
+                  }
+                >
+                  {task.title}
+                </p>
+                {task.deadline && (
+                  <p className={`text-caption ${isOverdue(task) ? "text-priority-high" : "text-foreground/50"}`}>
+                    {isOverdue(task) ? "Просрочено · " : ""}
+                    {new Date(task.deadline).toLocaleDateString("ru-RU", { day: "numeric", month: "short" })}
+                  </p>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 }
 
 export default function DashboardPage() {
@@ -46,17 +151,19 @@ export default function DashboardPage() {
   const { data: projects } = useProjects();
   const { data: profile } = useProfile();
   const toggleTask = useToggleTaskStatus();
-  const [activeFilter, setActiveFilter] = useState("all");
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
 
+  const activeTasks = (tasks ?? []).filter((t) => t.status !== "completed");
   const total = tasks?.length ?? 0;
   const completed = tasks?.filter((t) => t.status === "completed").length ?? 0;
   const progress = total > 0 ? Math.round((completed / total) * 100) : 0;
 
-  const filteredTasks =
-    activeFilter === "all" ? tasks ?? [] : (tasks ?? []).filter((t) => t.category === activeFilter);
+  const groups = groupTasksByCategory(activeTasks);
 
-  const groups = groupByCategory(filteredTasks);
+  const overdue = activeTasks.filter(isOverdue);
+  const dueToday = activeTasks.filter(isDueToday);
+  const dueTomorrow = activeTasks.filter(isDueTomorrow);
+
   const selectedTask = tasks?.find((t) => t.id === selectedTaskId) ?? null;
 
   function handleToggle(id: string) {
@@ -66,134 +173,110 @@ export default function DashboardPage() {
     toggleTask.mutate({ id, status: nextStatus });
   }
 
+  const hasAttention = overdue.length > 0 || dueToday.length > 0 || dueTomorrow.length > 0;
+
   return (
-    <div className="relative p-6">
+    <div className="p-6">
       <div className="flex items-start justify-between">
         <div>
-          <p className="text-caption text-foreground/60">Добрый вечер,</p>
+          <p className="text-caption text-foreground/60">{getGreeting()}</p>
           <h1 className="text-h1">{profile?.name ?? "..."}</h1>
         </div>
-        <button
-          type="button"
-          aria-label="Уведомления"
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-card shadow-sm shadow-foreground/5"
-        >
-          <Bell size={18} className="text-foreground/70" />
-        </button>
+        <ProgressRing value={progress} size={56} strokeWidth={5} />
       </div>
 
-      <div className="mt-6 flex items-center justify-between rounded-2xl bg-card p-6 shadow-sm shadow-foreground/5">
-        <div>
-          <p className="text-caption text-foreground/60">Прогресс дня</p>
-          <p className="text-h1">{progress}%</p>
-          <p className="text-caption text-foreground/60">
-            {completed} из {total} задач выполнено
-          </p>
-        </div>
-        <ProgressRing value={progress} />
-      </div>
+      <h2 className="mt-8 text-h2">На сегодня</h2>
 
-      <div className="mt-4 flex gap-2">
-        <Link href="/tasks/new" className="flex-1">
-          <QuickActionButton
-            icon={Plus}
-            label="Новая задача"
-            bgColorClass="bg-accent/15"
-            iconColorClass="text-accent"
+      <div className="mt-3 flex flex-col gap-3">
+        {isLoading && <p className="text-caption text-foreground/50">Загрузка...</p>}
+        {!isLoading && activeTasks.length === 0 && (
+          <p className="text-caption text-foreground/50">Все задачи выполнены 🎉</p>
+        )}
+        {groups.map((group) => (
+          <CategoryCard
+            key={group.category}
+            group={group}
+            onToggle={handleToggle}
+            onTaskClick={setSelectedTaskId}
           />
-        </Link>
-        <Link href="/goals/new" className="flex-1">
-          <QuickActionButton
-            icon={Target}
-            label="Новая цель"
-            bgColorClass="bg-sage/25"
-            iconColorClass="text-sage"
-          />
-        </Link>
-        <Link href="/notes" className="flex-1">
-          <QuickActionButton
-            icon={FileText}
-            label="Заметка"
-            bgColorClass="bg-lavender/20"
-            iconColorClass="text-lavender"
-          />
-        </Link>
-        <Link href="/focus" className="flex-1">
-          <QuickActionButton
-            icon={Sparkles}
-            label="Фокус режим"
-            bgColorClass="bg-lavender/35"
-            iconColorClass="text-[#7C6BC7]"
-          />
-        </Link>
-      </div>
-
-      <div className="mt-6 flex gap-2 rounded-full bg-card p-1">
-        {filters.map((filter) => (
-          <button
-            key={filter.value}
-            type="button"
-            onClick={() => setActiveFilter(filter.value)}
-            className={
-              activeFilter === filter.value
-                ? "flex-1 rounded-full bg-foreground py-2 text-caption font-medium text-background"
-                : "flex-1 rounded-full py-2 text-caption text-foreground/60"
-            }
-          >
-            {filter.label}
-          </button>
         ))}
       </div>
 
-      <div className="mt-6 flex items-center justify-between">
-        <div className="flex items-baseline gap-2">
-          <h2 className="text-h2">Сегодня</h2>
-          <span className="text-caption text-foreground/50">{total} задач</span>
-        </div>
-      </div>
-
-      <div className="mt-3 flex flex-col gap-5">
-        {isLoading && <p className="text-caption text-foreground/50">Загрузка...</p>}
-        {!isLoading && filteredTasks.length === 0 && (
-          <p className="text-caption text-foreground/50">Пока нет ни одной задачи.</p>
-        )}
-        {groups.map(({ key, items }) => {
-          const meta = categoryMeta[key];
-          const GroupIcon = meta?.icon;
-          return (
-            <div key={key}>
-              {meta && (
-                <div className="mb-2 flex items-center gap-2 text-caption text-foreground/60">
-                  <GroupIcon size={14} />
-                  <span>{meta.label}</span>
-                </div>
-              )}
-              <div className="flex flex-col gap-3">
-                {items.map((task) => (
-                  <TaskCard
-                    key={task.id}
-                    id={task.id}
-                    title={task.title}
-                    time={task.time}
-                    priority={task.priority}
-                    checked={task.status === "completed"}
-                    onToggle={handleToggle}
-                    onClick={setSelectedTaskId}
-                  />
-                ))}
+      {hasAttention && (
+        <>
+          <h2 className="mt-8 text-h2">Стоит обратить внимание</h2>
+          <div className="mt-3 flex flex-col gap-2">
+            {overdue.length > 0 && (
+              <div className="flex items-start gap-3 rounded-2xl bg-priority-high/10 p-4">
+                <AlertCircle size={18} className="mt-0.5 shrink-0 text-priority-high" />
+                <p className="text-body text-foreground">
+                  {overdue.length === 1
+                    ? `1 просроченная задача — «${overdue[0].title}»`
+                    : `${overdue.length} просроченных задачи`}
+                </p>
               </div>
-            </div>
-          );
-        })}
-      </div>
+            )}
+            {(dueToday.length > 0 || dueTomorrow.length > 0) && (
+              <div className="flex items-start gap-3 rounded-2xl bg-priority-medium/10 p-4">
+                <Clock size={18} className="mt-0.5 shrink-0 text-priority-medium" />
+                <p className="text-body text-foreground">
+                  {[
+                    dueToday.length > 0 && `${dueToday.length} с дедлайном сегодня`,
+                    dueTomorrow.length > 0 && `${dueTomorrow.length} с дедлайном завтра`,
+                  ]
+                    .filter(Boolean)
+                    .join(", ")}
+                </p>
+              </div>
+            )}
+            {activeTasks.length >= 5 && (
+              <div className="flex items-start gap-3 rounded-2xl bg-sage/20 p-4">
+                <Zap size={18} className="mt-0.5 shrink-0 text-sage" />
+                <p className="text-body text-foreground">
+                  Много активных задач — стоит выполнить несколько, чтобы снизить нагрузку
+                </p>
+              </div>
+            )}
+          </div>
+        </>
+      )}
 
-      <Link
-        href="/tasks/new"
-        aria-label="Новая задача"
-        className="fixed bottom-24 right-6 z-20 flex h-14 w-14 items-center justify-center rounded-full bg-accent text-card shadow-lg shadow-accent/30"
-      >
-        <Plus size={24} />
-      </Link>
+      <h2 className="mt-8 text-h2">Быстрые действия</h2>
+      <div className="mt-3 flex flex-col gap-2">
+        <Link
+          href="/assistant?mode=task"
+          className="flex items-center gap-3 rounded-2xl bg-accent p-4 text-card"
+        >
+          <Bot size={20} />
+          <div>
+            <p className="text-body font-medium">Создать задачу с ИИ</p>
+            <p className="text-caption opacity-80">Опишите — ИИ всё оформит</p>
+          </div>
+        </Link>
+        <div className="flex gap-2">
+          <Link
+            href="/tasks/new"
+            className="flex flex-1 items-center gap-2 rounded-2xl bg-card p-4 shadow-sm shadow-foreground/5"
+          >
+            <Plus size={18} className="text-accent" />
+            <span className="text-body text-foreground">Добавить задачу</span>
+          </Link>
+          <Link
+            href="/goals/new"
+            className="flex flex-1 items-center gap-2 rounded-2xl bg-card p-4 shadow-sm shadow-foreground/5"
+          >
+            <Target size={18} className="text-sage" />
+            <span className="text-body text-foreground">Добавить цель</span>
+          </Link>
+        </div>
+        <Link
+          href="/assistant"
+          className="flex items-center gap-3 rounded-2xl bg-card p-4 shadow-sm shadow-foreground/5"
+        >
+          <Bot size={18} className="text-lavender" />
+          <span className="text-body text-foreground">Помощник</span>
+        </Link>
+      </div>
 
       <TaskDetailSheet task={selectedTask} projects={projects ?? []} onClose={() => setSelectedTaskId(null)} />
     </div>
